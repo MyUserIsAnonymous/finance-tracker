@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>💰 Finance Tracker</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+        }
+        .card {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 15px 0;
+            border-left: 4px solid #667eea;
+        }
+        .positive { color: #10b981; }
+        .negative { color: #ef4444; }
+        .alert { 
+            background: #fee2e2;
+            border-color: #ef4444;
+            color: #991b1b;
+        }
+        button {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover { background: #5a67d8; }
+        input, select {
+            padding: 8px;
+            margin: 5px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        .progress-bar {
+            height: 20px;
+            background: #e5e7eb;
+            border-radius: 10px;
+            overflow: hidden;
+            margin: 10px 0;
+        }
+        .progress-fill {
+            height: 100%;
+            background: #10b981;
+            transition: width 0.3s;
+        }
+        .over-budget { background: #ef4444; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>💰 Finance Tracker</h1>
+        
+        <div class="card">
+            <h3>Quick Stats</h3>
+            <p>Balance: <span id="balance" class="positive">$0.00</span></p>
+            <p>Monthly Expenses: <span id="expenses">$0.00</span></p>
+            <p>Monthly Income: <span id="income">$0.00</span></p>
+        </div>
+
+        <div class="card">
+            <h3>Add Transaction</h3>
+            <select id="type">
+                <option value="expense">Expense</option>
+                <option value="income">Income</option>
+            </select>
+            <input id="category" placeholder="Category (e.g., groceries)">
+            <input id="description" placeholder="Description">
+            <input id="amount" type="number" placeholder="Amount" step="0.01">
+            <button onclick="addTransaction()">Add</button>
+        </div>
+
+        <div class="card">
+            <h3>Set Budget</h3>
+            <input id="budgetCategory" placeholder="Category">
+            <input id="budgetAmount" type="number" placeholder="Amount" step="0.01">
+            <button onclick="setBudget()">Set Budget</button>
+        </div>
+
+        <div class="card">
+            <h3>Budget Status</h3>
+            <div id="budgetStatus"></div>
+        </div>
+
+        <div class="card">
+            <h3>Recent Transactions</h3>
+            <div id="transactions"></div>
+        </div>
+
+        <div class="card">
+            <button onclick="exportData()">📥 Export to CSV</button>
+            <button onclick="clearData()" style="background:#ef4444;">🗑️ Clear All Data</button>
+        </div>
+    </div>
+
+    <script src="finance.js"></script>
+</body>
+</html>
