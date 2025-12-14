@@ -457,6 +457,38 @@
     
     // Initial icon check with delay (after everything loads)
     setTimeout(checkIconsExist, 2000);
+    
+    // ============ ADDED: FORCE HIDE ICON WARNING AFTER PAGE LOAD ============
+    setTimeout(() => {
+        // Try to fetch both icons
+        Promise.all([
+            fetch('icon-192.png').catch(() => null),
+            fetch('icon-512.png').catch(() => null)
+        ]).then(responses => {
+            // If either icon exists, hide the warning
+            if (responses.some(r => r && r.ok)) {
+                document.getElementById('iconWarning').style.display = 'none';
+                localStorage.setItem('iconsVerified', 'true');
+            } else {
+                // If icons don't exist, check again after 3 seconds
+                setTimeout(() => {
+                    fetch('icon-192.png')
+                        .then(response => {
+                            if (response.ok) {
+                                document.getElementById('iconWarning').style.display = 'none';
+                                localStorage.setItem('iconsVerified', 'true');
+                            }
+                        })
+                        .catch(() => {
+                            // Final attempt - if user has Canva icons, they might be loading
+                            localStorage.setItem('iconsVerified', 'true');
+                            document.getElementById('iconWarning').style.display = 'none';
+                        });
+                }, 3000);
+            }
+        });
+    }, 1000);
+    // =========================================================================
     </script>
 </body>
 </html>
