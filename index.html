@@ -3,14 +3,13 @@
 <head>
     <title>💰 Finance Tracker</title>
     
-    <!-- ============ ADD THESE 5 LINES ============ -->
-    <!-- PWA Meta Tags -->
+    <!-- ============ PWA Meta Tags ============ -->
     <link rel="manifest" href="manifest.json">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="theme-color" content="#764ba2">
+    <meta name="theme-color" content="#10b981"> <!-- Green theme -->
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="icon-192.png">
-    <!-- ========================================== -->
+    <!-- ====================================== -->
     
     <style>
         body {
@@ -18,7 +17,7 @@
             max-width: 800px;
             margin: 0 auto;
             padding: 20px;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(135deg, #10b981 0%, #047857 100%); /* Green gradient */
             min-height: 100vh;
         }
         .container {
@@ -32,25 +31,28 @@
             border-radius: 8px;
             padding: 20px;
             margin: 15px 0;
-            border-left: 4px solid #667eea;
+            border-left: 4px solid #10b981; /* Green border */
         }
-        .positive { color: #10b981; }
-        .negative { color: #ef4444; }
+        .positive { color: #10b981; } /* Green for positive */
+        .negative { color: #ef4444; } /* Red for negative */
         .alert { 
             background: #fee2e2;
             border-color: #ef4444;
             color: #991b1b;
         }
         button {
-            background: #667eea;
+            background: #10b981; /* Green buttons */
             color: white;
             border: none;
             padding: 10px 20px;
             border-radius: 5px;
             cursor: pointer;
             margin: 5px;
+            transition: background 0.3s;
         }
-        button:hover { background: #5a67d8; }
+        button:hover { 
+            background: #0da271; /* Darker green on hover */
+        }
         input, select {
             padding: 8px;
             margin: 5px;
@@ -66,15 +68,13 @@
         }
         .progress-fill {
             height: 100%;
-            background: #10b981;
+            background: #10b981; /* Green progress */
             transition: width 0.3s;
         }
         .over-budget { background: #ef4444; }
         
-        /* ============ PLACEHOLDER ICON STYLES ============ */
-        .icon-placeholder {
-            display: none; /* Hidden by default, only shows if icons missing */
-        }
+        /* ============ Icon Warning ============ */
+        .icon-placeholder { display: none; }
         .icon-warning {
             background: #fffbeb;
             border: 2px dashed #f59e0b;
@@ -85,47 +85,76 @@
             text-align: center;
         }
         .icon-warning a {
-            color: #667eea;
+            color: #10b981; /* Green link */
             font-weight: bold;
             text-decoration: none;
         }
         .icon-warning a:hover {
             text-decoration: underline;
         }
-        /* ================================================ */
+        
+        /* ============ Green Install Button ============ */
+        .install-btn {
+            background: linear-gradient(135deg, #10b981 0%, #0da271 100%);
+            color: white;
+            padding: 12px 25px;
+            border-radius: 8px;
+            border: none;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 10px;
+            box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3);
+        }
+        .install-btn:hover {
+            background: linear-gradient(135deg, #0da271 0%, #0b8a5c 100%);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(16, 185, 129, 0.4);
+        }
+        
+        /* ============ Green Status Indicators ============ */
+        .online-status {
+            background: #d1fae5;
+            color: #065f46;
+            border: 1px solid #a7f3d0;
+        }
+        .offline-status {
+            background: #fef3c7;
+            color: #92400e;
+            border: 1px solid #fde68a;
+        }
     </style>
 </head>
 <body>
-    <!-- ============ PLACEHOLDER ICON WARNING ============ -->
+    <!-- ============ Icon Warning ============ -->
     <div class="icon-warning" id="iconWarning">
         <strong>⚠️ App Icons Needed</strong>
         <p>Create <code>icon-192.png</code> and <code>icon-512.png</code> for better app experience.</p>
-        <p><a href="create-icons.html" target="_blank">Click here to generate icons</a> or use any 192×192 and 512×512 PNG files.</p>
+        <p><a href="#" onclick="createIcons()">Click here to generate GREEN icons</a></p>
         <button onclick="hideIconWarning()" style="background:#f59e0b;margin-top:10px;">Dismiss</button>
     </div>
-    <!-- ================================================ -->
+    <!-- ===================================== -->
     
     <div class="container">
-        <h1>💰 Finance Tracker</h1>
+        <h1 style="color:#065f46;">💰 Finance Tracker</h1> <!-- Dark green title -->
         
-        <!-- ============ PLACEHOLDER INSTALL BUTTON ============ -->
+        <!-- ============ Install Button ============ -->
         <div id="installContainer" style="text-align:center;margin-bottom:20px;display:none;">
-            <button onclick="installApp()" id="installButton" style="background:#10b981;">
+            <button class="install-btn" onclick="installApp()" id="installButton">
                 📱 Install as App
             </button>
             <p style="font-size:12px;color:#666;margin-top:5px;">Get app-like experience with offline access</p>
         </div>
-        <!-- ================================================= -->
+        <!-- ======================================= -->
         
         <div class="card">
-            <h3>Quick Stats</h3>
+            <h3 style="color:#065f46;">Quick Stats</h3> <!-- Dark green headers -->
             <p>Balance: <span id="balance" class="positive">$0.00</span></p>
             <p>Monthly Expenses: <span id="expenses">$0.00</span></p>
             <p>Monthly Income: <span id="income">$0.00</span></p>
         </div>
 
         <div class="card">
-            <h3>Add Transaction</h3>
+            <h3 style="color:#065f46;">Add Transaction</h3>
             <select id="type">
                 <option value="expense">Expense</option>
                 <option value="income">Income</option>
@@ -137,19 +166,19 @@
         </div>
 
         <div class="card">
-            <h3>Set Budget</h3>
+            <h3 style="color:#065f46;">Set Budget</h3>
             <input id="budgetCategory" placeholder="Category">
             <input id="budgetAmount" type="number" placeholder="Amount" step="0.01">
             <button onclick="setBudget()">Set Budget</button>
         </div>
 
         <div class="card">
-            <h3>Budget Status</h3>
+            <h3 style="color:#065f46;">Budget Status</h3>
             <div id="budgetStatus"></div>
         </div>
 
         <div class="card">
-            <h3>Recent Transactions</h3>
+            <h3 style="color:#065f46;">Recent Transactions</h3>
             <div id="transactions"></div>
         </div>
 
@@ -158,25 +187,19 @@
             <button onclick="clearData()" style="background:#ef4444;">🗑️ Clear All Data</button>
         </div>
         
-        <!-- ============ OFFLINE STATUS ============ -->
-        <div id="offlineStatus" style="display:none;text-align:center;padding:10px;background:#fef3c7;border-radius:5px;margin-top:20px;">
+        <!-- ============ Status Indicator ============ -->
+        <div id="offlineStatus" style="display:none;text-align:center;padding:10px;border-radius:5px;margin-top:20px;" class="offline-status">
             ⚡ Working offline - data saved locally
         </div>
-        <!-- ======================================= -->
+        <div id="onlineStatus" style="display:none;text-align:center;padding:10px;border-radius:5px;margin-top:20px;" class="online-status">
+            ✅ Online - changes will sync
+        </div>
+        <!-- ========================================= -->
     </div>
-
-    <!-- ============ PLACEHOLDER ICONS (Base64 encoded) ============ -->
-    <!-- These are simple colored squares that work until you add real icons -->
-    <div class="icon-placeholder">
-        <!-- 1x1 transparent pixel as fallback -->
-        <img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=" 
-             id="placeholderIcon">
-    </div>
-    <!-- =========================================================== -->
 
     <script src="finance.js"></script>
     
-    <!-- ============ PWA INSTALLATION SCRIPT ============ -->
+    <!-- ============ PWA Installation Script ============ -->
     <script>
     // Register Service Worker for PWA
     if ('serviceWorker' in navigator) {
@@ -184,8 +207,6 @@
             navigator.serviceWorker.register('./service-worker.js')
                 .then(reg => {
                     console.log('✅ Service Worker registered');
-                    
-                    // Check if icons exist
                     checkIconsExist();
                 })
                 .catch(err => {
@@ -196,15 +217,43 @@
         });
     }
     
+    // Create green icons
+    function createIcons() {
+        [192,512].forEach(size => {
+            const canvas = document.createElement('canvas');
+            canvas.width = canvas.height = size;
+            const ctx = canvas.getContext('2d');
+            
+            // Green gradient background
+            const gradient = ctx.createLinearGradient(0, 0, size, size);
+            gradient.addColorStop(0, '#10b981');
+            gradient.addColorStop(1, '#047857');
+            ctx.fillStyle = gradient;
+            ctx.fillRect(0, 0, size, size);
+            
+            // White money emoji
+            ctx.font = `bold ${size*0.6}px Arial`;
+            ctx.fillStyle = 'white';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText('💰', size/2, size/2);
+            
+            // Download
+            const link = document.createElement('a');
+            link.download = `icon-${size}.png`;
+            link.href = canvas.toDataURL();
+            link.click();
+        });
+        alert('✅ Green icons downloaded! Place in your app folder and refresh.');
+    }
+    
     // Check if icon files exist
     function checkIconsExist() {
         fetch('icon-192.png')
             .then(response => {
                 if (!response.ok) {
-                    // Icons missing, show warning
                     document.getElementById('iconWarning').style.display = 'block';
                 } else {
-                    // Icons exist, hide warning
                     document.getElementById('iconWarning').style.display = 'none';
                 }
             })
@@ -224,8 +273,6 @@
     window.addEventListener('beforeinstallprompt', (e) => {
         e.preventDefault();
         deferredPrompt = e;
-        
-        // Show install button
         document.getElementById('installContainer').style.display = 'block';
         console.log('📱 PWA ready to install');
     });
@@ -238,7 +285,7 @@
                 if (choiceResult.outcome === 'accepted') {
                     console.log('User installed the app');
                     document.getElementById('installContainer').innerHTML = 
-                        '<p style="color:#10b981;">✅ App installed! Check your home screen.</p>';
+                        '<p style="color:#10b981;padding:10px;background:#d1fae5;border-radius:5px;">✅ App installed! Check your home screen.</p>';
                 }
                 deferredPrompt = null;
             });
@@ -253,15 +300,25 @@
     // Online/offline detection
     window.addEventListener('online', () => {
         document.getElementById('offlineStatus').style.display = 'none';
+        document.getElementById('onlineStatus').style.display = 'block';
+        setTimeout(() => {
+            document.getElementById('onlineStatus').style.display = 'none';
+        }, 3000);
     });
     
     window.addEventListener('offline', () => {
         document.getElementById('offlineStatus').style.display = 'block';
+        document.getElementById('onlineStatus').style.display = 'none';
     });
     
     // Check initial online status
     if (!navigator.onLine) {
         document.getElementById('offlineStatus').style.display = 'block';
+    } else {
+        document.getElementById('onlineStatus').style.display = 'block';
+        setTimeout(() => {
+            document.getElementById('onlineStatus').style.display = 'none';
+        }, 3000);
     }
     
     // Check for PWA display mode
@@ -271,6 +328,5 @@
         document.getElementById('installContainer').style.display = 'none';
     }
     </script>
-    <!-- =============================================== -->
 </body>
 </html>
