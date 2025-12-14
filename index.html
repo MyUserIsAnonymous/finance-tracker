@@ -1,312 +1,276 @@
-class FinancialTracker {
-    constructor() {
-        this.loadData();
-    }
-
-    loadData() {
-        this.transactions = JSON.parse(localStorage.getItem('transactions')) || [];
-        this.budgets = JSON.parse(localStorage.getItem('budgets')) || {
-            'groceries': 300,
-            'dining': 200,
-            'entertainment': 150,
-            'transportation': 100
-        };
-    }
-
-    saveData() {
-        localStorage.setItem('transactions', JSON.stringify(this.transactions));
-        localStorage.setItem('budgets', JSON.stringify(this.budgets));
-        
-        // ============ PWA OFFLINE SYNC FEATURE ============
-        // Save timestamp for sync detection
-        localStorage.setItem('lastSync', Date.now().toString());
-        // ==================================================
-    }
-
-    addTransaction(type, category, description, amount) {
-        const transaction = {
-            id: Date.now(),
-            date: new Date().toISOString().split('T')[0],
-            type,
-            category,
-            description,
-            amount: parseFloat(amount)
-        };
-        this.transactions.push(transaction);
-        this.saveData();
-        this.updateUI();
-        
-        // ============ PWA NOTIFICATION ============
-        if (Notification.permission === "granted") {
-            new Notification(`💰 ${type === 'income' ? 'Income Added' : 'Expense Logged'}`, {
-                body: `${category}: $${amount}`,
-                icon: 'icon-192.png'
-            });
+<!DOCTYPE html>
+<html>
+<head>
+    <title>💰 Finance Tracker</title>
+    
+    <!-- ============ ADD THESE 5 LINES ============ -->
+    <!-- PWA Meta Tags -->
+    <link rel="manifest" href="manifest.json">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#764ba2">
+    <link rel="icon" href="icon-192.png">
+    <link rel="apple-touch-icon" href="icon-192.png">
+    <!-- ========================================== -->
+    
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
         }
-        // ==========================================
-        
-        return transaction;
-    }
-
-    setBudget(category, amount) {
-        this.budgets[category] = parseFloat(amount);
-        this.saveData();
-        this.updateUI();
-        
-        // ============ PWA NOTIFICATION ============
-        if (Notification.permission === "granted") {
-            new Notification('📊 Budget Updated', {
-                body: `${category}: $${amount} budget set`,
-                icon: 'icon-192.png'
-            });
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.1);
         }
-        // ==========================================
-    }
+        .card {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 15px 0;
+            border-left: 4px solid #667eea;
+        }
+        .positive { color: #10b981; }
+        .negative { color: #ef4444; }
+        .alert { 
+            background: #fee2e2;
+            border-color: #ef4444;
+            color: #991b1b;
+        }
+        button {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover { background: #5a67d8; }
+        input, select {
+            padding: 8px;
+            margin: 5px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        .progress-bar {
+            height: 20px;
+            background: #e5e7eb;
+            border-radius: 10px;
+            overflow: hidden;
+            margin: 10px 0;
+        }
+        .progress-fill {
+            height: 100%;
+            background: #10b981;
+            transition: width 0.3s;
+        }
+        .over-budget { background: #ef4444; }
+        
+        /* ============ PLACEHOLDER ICON STYLES ============ */
+        .icon-placeholder {
+            display: none; /* Hidden by default, only shows if icons missing */
+        }
+        .icon-warning {
+            background: #fffbeb;
+            border: 2px dashed #f59e0b;
+            border-radius: 8px;
+            padding: 15px;
+            margin: 20px 0;
+            color: #92400e;
+            text-align: center;
+        }
+        .icon-warning a {
+            color: #667eea;
+            font-weight: bold;
+            text-decoration: none;
+        }
+        .icon-warning a:hover {
+            text-decoration: underline;
+        }
+        /* ================================================ */
+    </style>
+</head>
+<body>
+    <!-- ============ PLACEHOLDER ICON WARNING ============ -->
+    <div class="icon-warning" id="iconWarning">
+        <strong>⚠️ App Icons Needed</strong>
+        <p>Create <code>icon-192.png</code> and <code>icon-512.png</code> for better app experience.</p>
+        <p><a href="create-icons.html" target="_blank">Click here to generate icons</a> or use any 192×192 and 512×512 PNG files.</p>
+        <button onclick="hideIconWarning()" style="background:#f59e0b;margin-top:10px;">Dismiss</button>
+    </div>
+    <!-- ================================================ -->
+    
+    <div class="container">
+        <h1>💰 Finance Tracker</h1>
+        
+        <!-- ============ PLACEHOLDER INSTALL BUTTON ============ -->
+        <div id="installContainer" style="text-align:center;margin-bottom:20px;display:none;">
+            <button onclick="installApp()" id="installButton" style="background:#10b981;">
+                📱 Install as App
+            </button>
+            <p style="font-size:12px;color:#666;margin-top:5px;">Get app-like experience with offline access</p>
+        </div>
+        <!-- ================================================= -->
+        
+        <div class="card">
+            <h3>Quick Stats</h3>
+            <p>Balance: <span id="balance" class="positive">$0.00</span></p>
+            <p>Monthly Expenses: <span id="expenses">$0.00</span></p>
+            <p>Monthly Income: <span id="income">$0.00</span></p>
+        </div>
 
-    getCurrentMonthTransactions() {
-        const currentMonth = new Date().getMonth();
-        const currentYear = new Date().getFullYear();
-        return this.transactions.filter(t => {
-            const date = new Date(t.date);
-            return date.getMonth() === currentMonth && date.getFullYear() === currentYear;
+        <div class="card">
+            <h3>Add Transaction</h3>
+            <select id="type">
+                <option value="expense">Expense</option>
+                <option value="income">Income</option>
+            </select>
+            <input id="category" placeholder="Category (e.g., groceries)">
+            <input id="description" placeholder="Description">
+            <input id="amount" type="number" placeholder="Amount" step="0.01">
+            <button onclick="addTransaction()">Add</button>
+        </div>
+
+        <div class="card">
+            <h3>Set Budget</h3>
+            <input id="budgetCategory" placeholder="Category">
+            <input id="budgetAmount" type="number" placeholder="Amount" step="0.01">
+            <button onclick="setBudget()">Set Budget</button>
+        </div>
+
+        <div class="card">
+            <h3>Budget Status</h3>
+            <div id="budgetStatus"></div>
+        </div>
+
+        <div class="card">
+            <h3>Recent Transactions</h3>
+            <div id="transactions"></div>
+        </div>
+
+        <div class="card">
+            <button onclick="exportData()">📥 Export to CSV</button>
+            <button onclick="clearData()" style="background:#ef4444;">🗑️ Clear All Data</button>
+        </div>
+        
+        <!-- ============ OFFLINE STATUS ============ -->
+        <div id="offlineStatus" style="display:none;text-align:center;padding:10px;background:#fef3c7;border-radius:5px;margin-top:20px;">
+            ⚡ Working offline - data saved locally
+        </div>
+        <!-- ======================================= -->
+    </div>
+
+    <!-- ============ PLACEHOLDER ICONS (Base64 encoded) ============ -->
+    <!-- These are simple colored squares that work until you add real icons -->
+    <div class="icon-placeholder">
+        <!-- 1x1 transparent pixel as fallback -->
+        <img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=" 
+             id="placeholderIcon">
+    </div>
+    <!-- =========================================================== -->
+
+    <script src="finance.js"></script>
+    
+    <!-- ============ PWA INSTALLATION SCRIPT ============ -->
+    <script>
+    // Register Service Worker for PWA
+    if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+            navigator.serviceWorker.register('./service-worker.js')
+                .then(reg => {
+                    console.log('✅ Service Worker registered');
+                    
+                    // Check if icons exist
+                    checkIconsExist();
+                })
+                .catch(err => {
+                    console.log('❌ SW registration failed:', err);
+                    document.getElementById('iconWarning').innerHTML += 
+                        '<p style="color:#ef4444;margin-top:10px;">Service Worker failed. Make sure service-worker.js exists.</p>';
+                });
         });
-    }
-
-    getBalance() {
-        const currentMonth = this.getCurrentMonthTransactions();
-        const income = currentMonth.filter(t => t.type === 'income').reduce((sum, t) => sum + t.amount, 0);
-        const expenses = currentMonth.filter(t => t.type === 'expense').reduce((sum, t) => sum + t.amount, 0);
-        return income - expenses;
-    }
-
-    getCategorySpending() {
-        const currentMonth = this.getCurrentMonthTransactions();
-        const spending = {};
-        currentMonth.forEach(t => {
-            if (t.type === 'expense') {
-                spending[t.category] = (spending[t.category] || 0) + t.amount;
-            }
-        });
-        return spending;
-    }
-
-    checkBudgets() {
-        const spending = this.getCategorySpending();
-        const status = {};
-        Object.keys(this.budgets).forEach(category => {
-            const spent = spending[category] || 0;
-            const budget = this.budgets[category];
-            status[category] = {
-                spent,
-                budget,
-                remaining: budget - spent,
-                percentage: (spent / budget * 100) || 0,
-                overBudget: spent > budget
-            };
-            
-            // ============ PWA BUDGET ALERT ============
-            if (spent > budget * 0.9 && spent <= budget) {
-                // Budget almost exceeded (90%)
-                this.showBudgetAlert(category, spent, budget, 'warning');
-            } else if (spent > budget) {
-                // Budget exceeded
-                this.showBudgetAlert(category, spent, budget, 'exceeded');
-            }
-            // ==========================================
-        });
-        return status;
     }
     
-    // ============ NEW PWA ALERT METHOD ============
-    showBudgetAlert(category, spent, budget, type) {
-        // Only show once per day per category
-        const alertKey = `alert_${category}_${new Date().toDateString()}`;
-        if (localStorage.getItem(alertKey)) return;
-        
-        const messages = {
-            warning: `⚠️ ${category} budget almost used! ($${spent.toFixed(2)} / $${budget.toFixed(2)})`,
-            exceeded: `🚨 ${category} budget exceeded! ($${spent.toFixed(2)} / $${budget.toFixed(2)})`
-        };
-        
-        // Show browser notification if allowed
-        if (Notification.permission === "granted") {
-            new Notification('📊 Budget Alert', {
-                body: messages[type],
-                icon: 'icon-192.png'
-            });
-        }
-        
-        // Show in-app alert
-        const alertDiv = document.createElement('div');
-        alertDiv.className = `card alert ${type}`;
-        alertDiv.innerHTML = `
-            <strong>${type === 'exceeded' ? '🚨' : '⚠️'} ${category}</strong>
-            <p>${messages[type]}</p>
-            <button onclick="this.parentElement.remove()">Dismiss</button>
-        `;
-        
-        const container = document.querySelector('.container');
-        if (container && !document.querySelector(`[data-alert="${category}"]`)) {
-            alertDiv.setAttribute('data-alert', category);
-            container.insertBefore(alertDiv, container.firstChild);
-            localStorage.setItem(alertKey, 'true');
-        }
-    }
-    // ==============================================
-
-    exportToCSV() {
-        const headers = ['Date', 'Type', 'Category', 'Description', 'Amount'];
-        const rows = this.transactions.map(t => [
-            t.date,
-            t.type,
-            t.category,
-            t.description,
-            t.amount.toFixed(2)
-        ]);
-        const csv = [headers, ...rows].map(row => row.join(',')).join('\n');
-        const blob = new Blob([csv], { type: 'text/csv' });
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = 'transactions.csv';
-        a.click();
-    }
-
-    clearAllData() {
-        if (confirm('Are you sure you want to clear all data? This cannot be undone!')) {
-            localStorage.clear();
-            this.loadData();
-            this.updateUI();
-        }
-    }
-
-    updateUI() {
-        // Update balance
-        const balance = this.getBalance();
-        document.getElementById('balance').textContent = `$${balance.toFixed(2)}`;
-        document.getElementById('balance').className = balance >= 0 ? 'positive' : 'negative';
-
-        // Update expenses and income
-        const currentMonth = this.getCurrentMonthTransactions();
-        const expenses = currentMonth.filter(t => t.type === 'expense').reduce((sum, t) => sum + t.amount, 0);
-        const income = currentMonth.filter(t => t.type === 'income').reduce((sum, t) => sum + t.amount, 0);
-        document.getElementById('expenses').textContent = `$${expenses.toFixed(2)}`;
-        document.getElementById('income').textContent = `$${income.toFixed(2)}`;
-
-        // Update budget status
-        const budgetStatus = this.checkBudgets();
-        const budgetHTML = Object.entries(budgetStatus).map(([category, status]) => `
-            <div class="card ${status.overBudget ? 'alert' : ''}" style="margin: 10px 0;">
-                <strong>${category}</strong>
-                <div>Spent: $${status.spent.toFixed(2)} / Budget: $${status.budget.toFixed(2)}</div>
-                <div>Remaining: $${status.remaining.toFixed(2)}</div>
-                <div class="progress-bar">
-                    <div class="progress-fill ${status.overBudget ? 'over-budget' : ''}" 
-                         style="width: ${Math.min(status.percentage, 100)}%">
-                    </div>
-                </div>
-            </div>
-        `).join('');
-        document.getElementById('budgetStatus').innerHTML = budgetHTML;
-
-        // Update recent transactions
-        const recentTransactions = this.transactions.slice(-10).reverse();
-        const transactionsHTML = recentTransactions.map(t => `
-            <div style="padding: 10px; border-bottom: 1px solid #eee;">
-                <span style="color: ${t.type === 'income' ? '#10b981' : '#ef4444'}">
-                    ${t.type === 'income' ? '+' : '-'}$${t.amount.toFixed(2)}
-                </span>
-                <strong>${category}</strong>: ${t.description}
-                <small style="color: #666;">${t.date}</small>
-            </div>
-        `).join('');
-        document.getElementById('transactions').innerHTML = transactionsHTML;
-    }
-}
-
-// Initialize tracker
-const tracker = new FinancialTracker();
-tracker.updateUI();
-
-// ============ PWA INITIALIZATION ============
-// Request notification permission on first load
-if (Notification.permission === "default") {
-    setTimeout(() => {
-        if (confirm("Enable notifications for budget alerts?")) {
-            Notification.requestPermission().then(permission => {
-                if (permission === "granted") {
-                    console.log("✅ Notifications enabled");
+    // Check if icon files exist
+    function checkIconsExist() {
+        fetch('icon-192.png')
+            .then(response => {
+                if (!response.ok) {
+                    // Icons missing, show warning
+                    document.getElementById('iconWarning').style.display = 'block';
+                } else {
+                    // Icons exist, hide warning
+                    document.getElementById('iconWarning').style.display = 'none';
                 }
+            })
+            .catch(() => {
+                document.getElementById('iconWarning').style.display = 'block';
+            });
+    }
+    
+    // Hide icon warning
+    function hideIconWarning() {
+        document.getElementById('iconWarning').style.display = 'none';
+        localStorage.setItem('hideIconWarning', 'true');
+    }
+    
+    // Show install button when PWA is ready
+    let deferredPrompt;
+    window.addEventListener('beforeinstallprompt', (e) => {
+        e.preventDefault();
+        deferredPrompt = e;
+        
+        // Show install button
+        document.getElementById('installContainer').style.display = 'block';
+        console.log('📱 PWA ready to install');
+    });
+    
+    // Install app function
+    function installApp() {
+        if (deferredPrompt) {
+            deferredPrompt.prompt();
+            deferredPrompt.userChoice.then((choiceResult) => {
+                if (choiceResult.outcome === 'accepted') {
+                    console.log('User installed the app');
+                    document.getElementById('installContainer').innerHTML = 
+                        '<p style="color:#10b981;">✅ App installed! Check your home screen.</p>';
+                }
+                deferredPrompt = null;
             });
         }
-    }, 2000);
-}
-
-// Detect if app is running as PWA
-const isStandalone = window.matchMedia('(display-mode: standalone)').matches || 
-                     window.navigator.standalone === true;
-
-if (isStandalone) {
-    console.log("📱 Running as installed PWA");
-    document.title = "💰 FinTrack (App)";
-}
-
-// Check for online/offline status
-window.addEventListener('online', () => {
-    console.log("🌐 Back online");
-    const status = document.createElement('div');
-    status.textContent = "✅ Back online";
-    status.style.cssText = "background:#10b981;color:white;padding:5px;text-align:center;";
-    document.body.prepend(status);
-    setTimeout(() => status.remove(), 3000);
-});
-
-window.addEventListener('offline', () => {
-    console.log("⚠️ Offline mode - data saved locally");
-    const status = document.createElement('div');
-    status.textContent = "⚠️ Offline - changes saved locally";
-    status.style.cssText = "background:#f59e0b;color:white;padding:5px;text-align:center;";
-    document.body.prepend(status);
-});
-// ============================================
-
-// Functions for HTML buttons
-function addTransaction() {
-    const type = document.getElementById('type').value;
-    const category = document.getElementById('category').value;
-    const description = document.getElementById('description').value;
-    const amount = document.getElementById('amount').value;
-
-    if (!category || !description || !amount || amount <= 0) {
-        alert('Please fill in all fields with valid values');
-        return;
     }
-
-    tracker.addTransaction(type, category, description, amount);
     
-    // Clear inputs
-    document.getElementById('description').value = '';
-    document.getElementById('amount').value = '';
-}
-
-function setBudget() {
-    const category = document.getElementById('budgetCategory').value;
-    const amount = document.getElementById('budgetAmount').value;
-
-    if (!category || !amount || amount <= 0) {
-        alert('Please enter valid budget category and amount');
-        return;
+    // Check if already hidden warning
+    if (localStorage.getItem('hideIconWarning') === 'true') {
+        document.getElementById('iconWarning').style.display = 'none';
     }
-
-    tracker.setBudget(category, amount);
-    document.getElementById('budgetCategory').value = '';
-    document.getElementById('budgetAmount').value = '';
-}
-
-function exportData() {
-    tracker.exportToCSV();
-}
-
-function clearData() {
-    tracker.clearAllData();
-}
+    
+    // Online/offline detection
+    window.addEventListener('online', () => {
+        document.getElementById('offlineStatus').style.display = 'none';
+    });
+    
+    window.addEventListener('offline', () => {
+        document.getElementById('offlineStatus').style.display = 'block';
+    });
+    
+    // Check initial online status
+    if (!navigator.onLine) {
+        document.getElementById('offlineStatus').style.display = 'block';
+    }
+    
+    // Check for PWA display mode
+    if (window.matchMedia('(display-mode: standalone)').matches) {
+        console.log('📱 Running as installed PWA');
+        document.title = "💰 FinTrack (App)";
+        document.getElementById('installContainer').style.display = 'none';
+    }
+    </script>
+    <!-- =============================================== -->
+</body>
+</html>
