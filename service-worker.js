@@ -6,6 +6,8 @@ const urlsToCache = [
   './index.html',
   './finance.js',
   './manifest.json'
+  './icon-192.png',
+  './icon-512.png',
   // NOTE: Icons are NOT cached here - they're optional for first load
 ];
 
