@@ -2,6 +2,16 @@
 <html>
 <head>
     <title>💰 Finance Tracker</title>
+    
+    <!-- ============ ADD THESE 5 LINES ============ -->
+    <!-- PWA Meta Tags -->
+    <link rel="manifest" href="manifest.json">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#764ba2">
+    <link rel="icon" href="icon-192.png">
+    <link rel="apple-touch-icon" href="icon-192.png">
+    <!-- ========================================== -->
+    
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -109,5 +119,33 @@
     </div>
 
     <script src="finance.js"></script>
+    
+    <!-- ============ ADD THIS SCRIPT ============ -->
+    <script>
+    // Register Service Worker for PWA
+    if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+            navigator.serviceWorker.register('./service-worker.js')
+                .then(reg => console.log('✅ Service Worker registered'))
+                .catch(err => console.log('❌ SW registration failed:', err));
+        });
+    }
+    
+    // Show install prompt when PWA is ready
+    let deferredPrompt;
+    window.addEventListener('beforeinstallprompt', (e) => {
+        e.preventDefault();
+        deferredPrompt = e;
+        console.log('📱 PWA ready to install');
+        
+        // Optional: Show install button
+        setTimeout(() => {
+            if (confirm('✨ Install Finance Tracker as an app for better experience?')) {
+                deferredPrompt.prompt();
+            }
+        }, 3000);
+    });
+    </script>
+    <!-- ========================================= -->
 </body>
 </html>
