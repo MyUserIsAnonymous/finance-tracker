@@ -369,7 +369,10 @@
     function checkIconsExist() {
         // Always hide warning after 2 seconds
         setTimeout(() => {
-            document.getElementById('iconWarning').style.display = 'none';
+            const warning = document.getElementById('iconWarning');
+            if (warning) {
+                warning.style.display = 'none';
+            }
             localStorage.setItem('iconsVerified', 'true');
         }, 2000);
         
@@ -377,16 +380,24 @@
         fetch('icon-192.png').catch(() => {});
     }
     
-    // Hide icon warning
+    // ============ FIXED: DISMISS BUTTON FUNCTION ============
     function hideIconWarning() {
-        document.getElementById('iconWarning').style.display = 'none';
+        const warning = document.getElementById('iconWarning');
+        if (warning) {
+            warning.style.display = 'none';
+            console.log('✅ Dismiss button clicked - warning hidden');
+        }
         localStorage.setItem('hideIconWarning', 'true');
         localStorage.setItem('iconsVerified', 'true');
+        return false; // Prevent default behavior
     }
     
     // Check if already hidden warning
     if (localStorage.getItem('hideIconWarning') === 'true') {
-        document.getElementById('iconWarning').style.display = 'none';
+        const warning = document.getElementById('iconWarning');
+        if (warning) {
+            warning.style.display = 'none';
+        }
     }
     
     // Show install button when PWA is ready
@@ -450,10 +461,25 @@
     // ============ ADDED: FORCE HIDE ICON WARNING ON LOAD ============
     window.addEventListener('load', () => {
         setTimeout(() => {
-            document.getElementById('iconWarning').style.display = 'none';
+            const warning = document.getElementById('iconWarning');
+            if (warning) {
+                warning.style.display = 'none';
+            }
             localStorage.setItem('iconsVerified', 'true');
-            console.log('✅ Icon warning hidden');
+            console.log('✅ Icon warning auto-hidden');
         }, 1500);
+    });
+    
+    // ============ ADDED: CLICK DELEGATION FOR DISMISS BUTTON ============
+    document.addEventListener('click', function(event) {
+        // Check if click is on any dismiss button
+        if (event.target.textContent.includes('Dismiss') || 
+            event.target.getAttribute('onclick')?.includes('hideIconWarning')) {
+            console.log('Dismiss clicked via delegation');
+            hideIconWarning();
+            event.preventDefault();
+            event.stopPropagation();
+        }
     });
     </script>
 </body>
