@@ -229,94 +229,34 @@
     
     <!-- ============ PWA Installation Script ============ -->
     <script>
-    // ============ IMPROVED SERVICE WORKER MANAGEMENT ============
-// ============ SIMPLIFIED SERVICE WORKER SETUP ============
-if ('serviceWorker' in navigator) {
-    // ONLY clear on first install or when debugging
-    const shouldClearSW = localStorage.getItem('clearSW') === 'true' || 
-                         !localStorage.getItem('swInitialized');
-    
-    if (shouldClearSW) {
-        navigator.serviceWorker.getRegistrations().then(registrations => {
-            registrations.forEach(registration => registration.unregister());
-            console.log('🗑️ Cleared service workers (first install)');
-        });
+    // ============ SIMPLIFIED SERVICE WORKER SETUP ============
+    if ('serviceWorker' in navigator) {
+        // ONLY clear on first install or when debugging
+        const shouldClearSW = localStorage.getItem('clearSW') === 'true' || 
+                             !localStorage.getItem('swInitialized');
         
-        caches.keys().then(cacheNames => {
-            cacheNames.forEach(cacheName => {
-                caches.delete(cacheName);
-                console.log('🗑️ Deleted cache:', cacheName);
+        if (shouldClearSW) {
+            navigator.serviceWorker.getRegistrations().then(registrations => {
+                registrations.forEach(registration => registration.unregister());
+                console.log('🗑️ Cleared service workers (first install)');
             });
-        });
-        
-        localStorage.removeItem('clearSW');
-    }
-    
-    // Register service worker
-    window.addEventListener('load', () => {
-        navigator.serviceWorker.register('./service-worker.js', { scope: './' })
-            .then(reg => {
-                console.log('✅ Service Worker registered:', reg.scope);
-                localStorage.setItem('swInitialized', 'true');
-                
-                // Check for updates
-                reg.onupdatefound = () => {
-                    const installingWorker = reg.installing;
-                    installingWorker.onstatechange = () => {
-                        if (installingWorker.state === 'installed') {
-                            if (navigator.serviceWorker.controller) {
-                                console.log('🔄 New version available!');
-                                showUpdateNotification();
-                            }
-                        }
-                    };
-                };
-                
-                checkIconsExist();
-            })
-            .catch(err => {
-                console.log('❌ SW registration failed:', err);
+            
+            caches.keys().then(cacheNames => {
+                cacheNames.forEach(cacheName => {
+                    caches.delete(cacheName);
+                    console.log('🗑️ Deleted cache:', cacheName);
+                });
             });
-    });
-    
-    // Listen for messages
-    navigator.serviceWorker.addEventListener('message', event => {
-        if (event.data.action === 'reload') {
-            location.reload();
+            
+            localStorage.removeItem('clearSW');
         }
-    });
-}
         
-        // Clear all caches
-function clearCache() {
-    if (confirm('Clear all app cache? This will reload the page.')) {
-        // Clear service workers
-        navigator.serviceWorker.getRegistrations().then(registrations => {
-            registrations.forEach(registration => registration.unregister());
-        });
-        
-        // Clear caches
-        caches.keys().then(cacheNames => {
-            cacheNames.forEach(cacheName => caches.delete(cacheName));
-        });
-        
-        // Clear localStorage except transactions
-        const transactions = localStorage.getItem('transactions');
-        const budgets = localStorage.getItem('budgets');
-        localStorage.clear();
-        if (transactions) localStorage.setItem('transactions', transactions);
-        if (budgets) localStorage.setItem('budgets', budgets);
-        
-        // Force reload
-        setTimeout(() => location.reload(true), 500);
-    }
-}
-        
-        // Register new service worker
+        // Register service worker
         window.addEventListener('load', () => {
             navigator.serviceWorker.register('./service-worker.js', { scope: './' })
                 .then(reg => {
                     console.log('✅ Service Worker registered:', reg.scope);
+                    localStorage.setItem('swInitialized', 'true');
                     
                     // Check for updates
                     reg.onupdatefound = () => {
@@ -324,40 +264,26 @@ function clearCache() {
                         installingWorker.onstatechange = () => {
                             if (installingWorker.state === 'installed') {
                                 if (navigator.serviceWorker.controller) {
-                                    // New update available
                                     console.log('🔄 New version available!');
                                     showUpdateNotification();
-                                } else {
-                                    // First install
-                                    console.log('📦 App installed for first time');
                                 }
                             }
                         };
                     };
                     
-                    // Check icons after SW is ready
                     checkIconsExist();
                 })
                 .catch(err => {
                     console.log('❌ SW registration failed:', err);
-                    document.getElementById('iconWarning').innerHTML += 
-                        '<p style="color:#ef4444;margin-top:10px;">Service Worker failed. Check console for details.</p>';
                 });
         });
         
-        // Listen for messages from service worker
+        // Listen for messages
         navigator.serviceWorker.addEventListener('message', event => {
             if (event.data.action === 'reload') {
                 location.reload();
             }
         });
-        
-        // Auto-update check every 30 minutes
-        setInterval(() => {
-            navigator.serviceWorker.getRegistration().then(reg => {
-                if (reg) reg.update();
-            });
-        }, 30 * 60 * 1000);
     }
     
     // ============ UPDATE NOTIFICATION FUNCTIONS ============
@@ -376,32 +302,37 @@ function clearCache() {
         location.reload(true);
     }
     
-    // ============ CACHE CLEARING ============
+    // ============ FIXED CACHE CLEARING ============
     function clearCache() {
         if (confirm('Clear all app cache? This will reload the page.')) {
-            // Clear service workers
-            navigator.serviceWorker.getRegistrations().then(registrations => {
-                registrations.forEach(registration => registration.unregister());
-            });
+            // Mark to clear SW on next load
+            localStorage.setItem('clearSW', 'true');
             
             // Clear caches
             caches.keys().then(cacheNames => {
                 cacheNames.forEach(cacheName => caches.delete(cacheName));
             });
             
-            // Clear localStorage except transactions
+            // Keep transaction data and settings
             const transactions = localStorage.getItem('transactions');
             const budgets = localStorage.getItem('budgets');
+            const hideWarning = localStorage.getItem('hideIconWarning');
+            const iconsVerified = localStorage.getItem('iconsVerified');
+            
             localStorage.clear();
+            
+            // Restore important data
             if (transactions) localStorage.setItem('transactions', transactions);
             if (budgets) localStorage.setItem('budgets', budgets);
+            if (hideWarning) localStorage.setItem('hideIconWarning', hideWarning);
+            if (iconsVerified) localStorage.setItem('iconsVerified', iconsVerified);
             
-            // Force reload
+            // Reload
             setTimeout(() => location.reload(true), 500);
         }
     }
     
-    // ============ EXISTING FUNCTIONS (UPDATED) ============
+    // ============ EXISTING FUNCTIONS ============
     // Create green icons
     function createIcons() {
         [192,512].forEach(size => {
@@ -432,7 +363,7 @@ function clearCache() {
         alert('✅ Green icons downloaded! Place in your app folder and refresh.');
     }
     
-    // ============ FIXED: SIMPLIFIED ICON CHECKING ============
+    // ============ SIMPLIFIED ICON CHECKING ============
     function checkIconsExist() {
         // Always hide warning after 2 seconds
         setTimeout(() => {
@@ -447,7 +378,7 @@ function clearCache() {
         fetch('icon-192.png').catch(() => {});
     }
     
-    // ============ FIXED: DISMISS BUTTON FUNCTION ============
+    // ============ FIXED DISMISS BUTTON FUNCTION ============
     function hideIconWarning() {
         const warning = document.getElementById('iconWarning');
         if (warning) {
@@ -456,7 +387,7 @@ function clearCache() {
         }
         localStorage.setItem('hideIconWarning', 'true');
         localStorage.setItem('iconsVerified', 'true');
-        return false; // Prevent default behavior
+        return false;
     }
     
     // Check if already hidden warning
@@ -522,10 +453,10 @@ function clearCache() {
         document.getElementById('installContainer').style.display = 'none';
     }
     
-    // Initial icon check with delay (after everything loads)
+    // Initial icon check with delay
     setTimeout(checkIconsExist, 2000);
     
-    // ============ ADDED: FORCE HIDE ICON WARNING ON LOAD ============
+    // ============ FORCE HIDE ICON WARNING ON LOAD ============
     window.addEventListener('load', () => {
         setTimeout(() => {
             const warning = document.getElementById('iconWarning');
@@ -537,7 +468,7 @@ function clearCache() {
         }, 1500);
     });
     
-    // ============ ADDED: CLICK DELEGATION FOR DISMISS BUTTON ============
+    // ============ CLICK DELEGATION FOR DISMISS BUTTON ============
     document.addEventListener('click', function(event) {
         // Check if click is on any dismiss button
         if (event.target.textContent.includes('Dismiss') || 
@@ -548,6 +479,21 @@ function clearCache() {
             event.stopPropagation();
         }
     });
+    
+    // ============ FORCE BUTTON RE-BINDING ============
+    setTimeout(() => {
+        const dismissBtn = document.querySelector('button[onclick*="hideIconWarning"]');
+        if (dismissBtn) {
+            console.log('🔧 Re-binding dismiss button');
+            dismissBtn.onclick = function(e) {
+                console.log('Button clicked via re-bind!');
+                hideIconWarning();
+                e.preventDefault();
+                e.stopPropagation();
+                return false;
+            };
+        }
+    }, 1000);
     </script>
 </body>
 </html>
