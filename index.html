@@ -230,20 +230,87 @@
     <!-- ============ PWA Installation Script ============ -->
     <script>
     // ============ IMPROVED SERVICE WORKER MANAGEMENT ============
-    if ('serviceWorker' in navigator) {
-        // First, clear any old service workers
+// ============ SIMPLIFIED SERVICE WORKER SETUP ============
+if ('serviceWorker' in navigator) {
+    // ONLY clear on first install or when debugging
+    const shouldClearSW = localStorage.getItem('clearSW') === 'true' || 
+                         !localStorage.getItem('swInitialized');
+    
+    if (shouldClearSW) {
         navigator.serviceWorker.getRegistrations().then(registrations => {
             registrations.forEach(registration => registration.unregister());
-            console.log('🗑️ Cleared old service workers');
+            console.log('🗑️ Cleared service workers (first install)');
         });
         
-        // Clear all caches
         caches.keys().then(cacheNames => {
             cacheNames.forEach(cacheName => {
                 caches.delete(cacheName);
                 console.log('🗑️ Deleted cache:', cacheName);
             });
         });
+        
+        localStorage.removeItem('clearSW');
+    }
+    
+    // Register service worker
+    window.addEventListener('load', () => {
+        navigator.serviceWorker.register('./service-worker.js', { scope: './' })
+            .then(reg => {
+                console.log('✅ Service Worker registered:', reg.scope);
+                localStorage.setItem('swInitialized', 'true');
+                
+                // Check for updates
+                reg.onupdatefound = () => {
+                    const installingWorker = reg.installing;
+                    installingWorker.onstatechange = () => {
+                        if (installingWorker.state === 'installed') {
+                            if (navigator.serviceWorker.controller) {
+                                console.log('🔄 New version available!');
+                                showUpdateNotification();
+                            }
+                        }
+                    };
+                };
+                
+                checkIconsExist();
+            })
+            .catch(err => {
+                console.log('❌ SW registration failed:', err);
+            });
+    });
+    
+    // Listen for messages
+    navigator.serviceWorker.addEventListener('message', event => {
+        if (event.data.action === 'reload') {
+            location.reload();
+        }
+    });
+}
+        
+        // Clear all caches
+function clearCache() {
+    if (confirm('Clear all app cache? This will reload the page.')) {
+        // Clear service workers
+        navigator.serviceWorker.getRegistrations().then(registrations => {
+            registrations.forEach(registration => registration.unregister());
+        });
+        
+        // Clear caches
+        caches.keys().then(cacheNames => {
+            cacheNames.forEach(cacheName => caches.delete(cacheName));
+        });
+        
+        // Clear localStorage except transactions
+        const transactions = localStorage.getItem('transactions');
+        const budgets = localStorage.getItem('budgets');
+        localStorage.clear();
+        if (transactions) localStorage.setItem('transactions', transactions);
+        if (budgets) localStorage.setItem('budgets', budgets);
+        
+        // Force reload
+        setTimeout(() => location.reload(true), 500);
+    }
+}
         
         // Register new service worker
         window.addEventListener('load', () => {
